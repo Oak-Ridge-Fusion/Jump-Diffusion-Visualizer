@@ -13,7 +13,7 @@
     "esModuleInterop": true,
     "strict": false,
     "noImplicitAny": false,
-    "moduleResolution": "node"
+    "moduleResolution": "bundler"
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]
