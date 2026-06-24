@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Jump Diffusion Playground</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<h1>Jump-Diffusion Electron Playground</h1>
+
+<div class="controls">
+<label>σ <input id="sigma" type="range" min="0" max="3" step="0.1" value="0.7"></label>
+<label>Jump Rate λ <input id="lambda" type="range" min="0" max="1" step="0.01" value="0.02"></label>
+<label>Jump Size <input id="jumpSize" type="range" min="0" max="200" step="1" value="80"></label>
+<button onclick="startSim()">Start</button>
+<button onclick="pauseSim()">Pause</button>
+<button onclick="resetSim()">Reset</button>
+<button onclick="spawnExperiment()">Spawn at x=1.5</button>
+</div>
+
+<div class="grid">
+<canvas id="world" width="800" height="300"></canvas>
+<canvas id="hist"></canvas>
+<canvas id="survival"></canvas>
+<canvas id="terminal"></canvas>
+</div>
+
+<p id="stats"></p>
+
+<script src="app.js"></script>
+</body>
+</html>

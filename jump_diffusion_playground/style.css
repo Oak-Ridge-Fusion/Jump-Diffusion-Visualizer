@@ -1,0 +1,7 @@
+
+body{font-family:Arial;margin:20px;background:#111;color:white}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+canvas{background:#222;border:1px solid #555}
+.controls{margin-bottom:15px}
+label{margin-right:15px}
+button{margin-right:10px}
