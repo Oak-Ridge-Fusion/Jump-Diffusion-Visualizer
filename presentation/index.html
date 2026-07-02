@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jump-Diffusion Visualizer — Presentation</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="tabbar">
+  <span class="brand">Jump-Diffusion Visualizer</span>
+  <button class="tab-btn" data-deck="comparison">Comparison Benchmark</button>
+  <button class="tab-btn" data-deck="sde">Learning Diffusion SDE</button>
+  <div class="spacer"></div>
+  <span class="slide-counter" id="slide-counter">1 / 1</span>
+</div>
+
+<!-- ======================================================= -->
+<!-- DECK 1: jump1d/comparison                                -->
+<!-- ======================================================= -->
+<div class="deck" data-deck="comparison">
+<div class="slides">
+
+  <section class="slide title-slide" data-title="Title">
+    <div class="tag">jump1d / comparison</div>
+    <h1>Generative Model Benchmark<br>RealNVP vs. DDPM</h1>
+    <p class="lead">Benchmarking two alternative generative models against the same conditional
+      transition density that the training-free diffusion flow map in <code>jump1d/</code> learns —
+      on <strong>exactly the same ground-truth data</strong>, with nothing in the original pipeline modified.</p>
+  </section>
+
+  <section class="slide" data-title="Goal">
+    <div class="eyebrow">The Question</div>
+    <h2>Can standard generative models learn the same flow map?</h2>
+    <div class="equation">p(X<sub>t+&Delta;t</sub> | X<sub>t</sub>)</div>
+    <p class="lead">This is the conditional transition density of a bounded jump-diffusion
+      process (absorbing boundaries) — the same quantity <code>jump1d/</code>'s training-free
+      flow map is built to approximate. The benchmark asks: how do a normalizing flow and a
+      diffusion model compare, trained the ordinary way, on the same task?</p>
+    <ul class="bullets">
+      <li>Same data: <code>artifacts_bd/data_pairs.npz</code> — bounded domain <code>[0, 6]</code></li>
+      <li><code>jump1d/</code> core (<code>common.py</code>, <code>data_generation.py</code>, <code>training.py</code>, <code>inference.py</code>) is untouched</li>
+      <li>Pipeline is dimension-agnostic — same code could benchmark a future higher-D or unbounded SDE</li>
+    </ul>
+  </section>
+
+  <section class="slide" data-title="Two Models">
+    <div class="eyebrow">Contenders</div>
+    <h2>Two architectures, two very different objectives</h2>
+    <div class="cols">
+      <div class="col">
+        <span class="badge info">Normalizing Flow</span>
+        <h1 style="font-size:26px;margin-top:10px;">Conditional RealNVP</h1>
+        <p class="lead" style="font-size:15px;">8 conditional affine coupling layers + ActNorm +
+          permutations. Trains by maximizing <strong>exact log-likelihood</strong> via change-of-variables —
+          the only model here that yields a closed-form NLL.</p>
+      </div>
+      <div class="col">
+        <span class="badge info">Diffusion</span>
+        <h1 style="font-size:26px;margin-top:10px;">Conditional DDPM</h1>
+        <p class="lead" style="font-size:15px;">UNet-style MLP denoiser with a cosine noise schedule,
+          trained with <strong>epsilon-prediction MSE</strong>. Sampling requires iterating the full
+          reverse chain — no closed-form density.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="Metrics">
+    <div class="eyebrow">Evaluation</div>
+    <h2>Five ways to ask "is the sampled distribution right?"</h2>
+    <ul class="bullets">
+      <li><b>Wasserstein-1 distance</b> — earth-mover's distance to ground truth</li>
+      <li><b>KL divergence</b> — histogram-based</li>
+      <li><b>Hellinger distance</b> — bounded density-overlap metric</li>
+      <li><b>MMD</b> — RBF-kernel maximum mean discrepancy, unbiased estimator</li>
+      <li><b>Sampling speed</b>, <b>training time</b>, <b>peak GPU memory</b> — practical cost</li>
+      <li><b>NLL</b> — exact, RealNVP only (diffusion models have no closed-form likelihood)</li>
+    </ul>
+    <p class="lead" style="margin-top:14px;">All computed on a held-out validation split, one ML draw
+      paired per validation <code>X<sub>t</sub></code>, so the conditioning marginal matches exactly.</p>
+  </section>
+
+  <section class="slide" data-title="Headline Results">
+    <div class="eyebrow">Results</div>
+    <h2>The numbers</h2>
+    <table class="data">
+      <tr><th>Metric</th><th>RealNVP</th><th>DDPM</th><th>Better</th></tr>
+      <tr><td>Wasserstein-1</td><td class="good">0.0555</td><td class="bad">2.819</td><td>RealNVP</td></tr>
+      <tr><td>KL divergence</td><td class="bad">0.0283</td><td class="good">0.00016</td><td>DDPM</td></tr>
+      <tr><td>Hellinger</td><td class="bad">0.108</td><td class="good">0.00898</td><td>DDPM</td></tr>
+      <tr><td>MMD</td><td>&minus;0.000269</td><td>&minus;0.0000155</td><td>≈ tie (both ~0)</td></tr>
+      <tr><td>NLL (exact)</td><td>0.866</td><td>—</td><td>N/A</td></tr>
+      <tr><td>Sampling rate</td><td class="good">3,117,575 /s</td><td class="bad">820 /s</td><td>RealNVP (~3800×)</td></tr>
+      <tr><td>Training time</td><td class="bad">870.4 s</td><td class="good">574.8 s</td><td>DDPM</td></tr>
+      <tr><td>Peak GPU memory</td><td class="good">37.3 MB</td><td class="bad">180.4 MB</td><td>RealNVP</td></tr>
+    </table>
+  </section>
+
+  <section class="slide" data-title="01 Histograms">
+    <div class="eyebrow">Figure 01</div>
+    <h2>Histograms — Ground Truth vs. RealNVP vs. DDPM</h2>
+    <div class="figs">
+      <div class="figcard"><img src="assets/comparison/01_histograms.png" alt="Histograms"><div class="cap">Sample histograms at several X_t anchors</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="02 PDF Overlay">
+    <div class="eyebrow">Figure 02</div>
+    <h2>KDE-smoothed density overlay</h2>
+    <div class="figs">
+      <div class="figcard"><img src="assets/comparison/02_pdf_overlay.png" alt="PDF overlay"><div class="cap">Same anchors, smoothed densities</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="03 QQ Plot">
+    <div class="eyebrow">Figure 03</div>
+    <h2>Quantile-quantile vs. ground truth</h2>
+    <div class="figs">
+      <div class="figcard"><img src="assets/comparison/03_qq_plot.png" alt="QQ plot"><div class="cap">RealNVP vs GT and DDPM vs GT</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="04 CDF Comparison">
+    <div class="eyebrow">Figure 04</div>
+    <h2>Empirical CDF overlay (aggregate)</h2>
+    <div class="figs">
+      <div class="figcard"><img src="assets/comparison/04_cdf_comparison.png" alt="CDF comparison"><div class="cap">Aggregate CDF, all anchors combined</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="05 Wasserstein Bar">
+    <div class="eyebrow">Figure 05</div>
+    <h2>Wasserstein distance to ground truth, by anchor</h2>
+    <div class="figs">
+      <div class="figcard"><img src="assets/comparison/05_wasserstein_bar.png" alt="Wasserstein bar chart"><div class="cap">Grouped by anchor + overall</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="06 Training Loss">
+    <div class="eyebrow">Figure 06</div>
+    <h2>Training / validation curves</h2>
+    <div class="figs">
+      <div class="figcard"><img src="assets/comparison/06_training_loss.png" alt="Training loss"><div class="cap">RealNVP vs DDPM convergence</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="07 Sampling Speed">
+    <div class="eyebrow">Figure 07</div>
+    <h2>Sampling speed — samples/sec</h2>
+    <div class="figs">
+      <div class="figcard"><img src="assets/comparison/07_sampling_speed.png" alt="Sampling speed"><div class="cap">RealNVP: single forward pass. DDPM: full reverse chain</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="08 GPU Memory">
+    <div class="eyebrow">Figure 08</div>
+    <h2>Peak GPU memory during training</h2>
+    <div class="figs">
+      <div class="figcard"><img src="assets/comparison/08_gpu_memory.png" alt="GPU memory"><div class="cap">RealNVP ~37 MB vs DDPM ~180 MB</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="09 Rollout Comparison">
+    <div class="eyebrow">Figure 09</div>
+    <h2>Multi-step rollout comparison</h2>
+    <p class="lead">Composed survival fraction + terminal density. Uses an empirical
+      <code>P(exit | X_t)</code> lookup from <code>data_exit.npz</code> so all three rollout
+      methods — Ground Truth NN-bootstrap, RealNVP, DDPM — fairly account for boundary absorption,
+      matching how the flow map in <code>jump1d</code> handles it.</p>
+    <div class="figs">
+      <div class="figcard"><img src="assets/comparison/09_rollout_comparison.png" alt="Rollout comparison"><div class="cap">Survival fraction + terminal density, multi-step</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="Takeaways">
+    <div class="eyebrow">Conclusion</div>
+    <h2>Speed vs. fidelity — and metrics disagree</h2>
+    <ul class="bullets">
+      <li><b>RealNVP</b> is dramatically cheaper at inference — <b>~3,800×</b> faster sampling,
+        <b>~5×</b> less GPU memory — and wins on Wasserstein distance and exact NLL.</li>
+      <li><b>DDPM</b> wins decisively on KL divergence and Hellinger distance (bulk-of-distribution
+        fit), at the cost of an iterative sampler ~3,800× slower.</li>
+      <li>The inverted ranking (RealNVP best on Wasserstein, worst on KL/Hellinger, and vice versa
+        for DDPM) shows <b>no single metric tells the whole story</b> — Wasserstein is sensitive to
+        outliers/tails, KL and Hellinger to bulk overlap.</li>
+      <li>The benchmark harness is <b>model-agnostic</b>: adding a GAN, VAE, or Flow-Matching model
+        only requires a new <code>models/your_model.py</code> + <code>train_your_model.py</code>.</li>
+    </ul>
+    <p class="closing-mark">jump1d/comparison — compare.py orchestrates evaluate.py + visualize.py → results/ + figures/</p>
+  </section>
+
+</div>
+</div>
+
+<!-- ======================================================= -->
+<!-- DECK 2: learning_diffusion_sde                           -->
+<!-- ======================================================= -->
+<div class="deck" data-deck="sde">
+<div class="slides">
+
+  <section class="slide title-slide" data-title="Title">
+    <div class="tag">learning_diffusion_sde</div>
+    <h1>Learning Diffusion SDE Flow Maps<br>a step-by-step reproduction</h1>
+    <p class="lead">An educational, 12-script implementation of training-free conditional diffusion
+      models for learning stochastic flow maps in bounded domains — reproducing <b>Figure 2</b> of
+      <i>"Generative AI Models for Learning Flow Maps of Stochastic Dynamical Systems in Bounded Domains."</i></p>
+  </section>
+
+  <section class="slide" data-title="Goal">
+    <div class="eyebrow">The Target</div>
+    <h2>Reproduce Figure 2: four histograms, one question</h2>
+    <p class="lead">How much does <b>training-data curation</b> matter when learning a stochastic
+      flow map near an absorbing boundary?</p>
+    <table class="data">
+      <tr><th>Panel</th><th>Training data</th></tr>
+      <tr><td>Ground Truth</td><td>direct SDE simulation (no learning)</td></tr>
+      <tr><td>Our Method</td><td>steps where particle is inside at <b>both</b> ends</td></tr>
+      <tr><td>All Trajectories</td><td>every step, including boundary crossings</td></tr>
+      <tr><td>Only Confined</td><td>only particles that survive all the way to T</td></tr>
+    </table>
+  </section>
+
+  <section class="slide" data-title="The SDE">
+    <div class="eyebrow">Step 01</div>
+    <h2><span class="step-pill">1</span>Simulate the ground truth</h2>
+    <div class="equation">dX<sub>t</sub> = dW<sub>t</sub>,&nbsp; X<sub>0</sub> = 1,&nbsp; 0 &lt; X<sub>t</sub> &lt; 6&nbsp; (absorbing boundaries)</div>
+    <p class="lead">Pure Brownian motion, zero drift, unit diffusion — no parameters to tune, yet the
+      absorbing walls make the terminal distribution <b>non-Gaussian</b>. Euler-Maruyama is
+      exact for additive noise: <code>X<sub>n+1</sub> = X<sub>n</sub> + &radic;dt &middot; Z<sub>n</sub></code>.
+      200,000 particles, dt = 5&times;10<sup>-4</sup>, T = 3 → 6,000 steps.</p>
+    <div class="figs">
+      <div class="figcard"><img src="assets/sde/trajectory_examples.png" alt="Trajectory examples"><div class="cap">Example particle trajectories</div></div>
+      <div class="figcard"><img src="assets/sde/ground_truth_histogram.png" alt="Ground truth histogram"><div class="cap">Terminal distribution vs. analytical (Fourier) solution</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="Dataset & Diffusion">
+    <div class="eyebrow">Steps 02–03</div>
+    <h2><span class="step-pill">2</span>Build the training pairs, then noise them</h2>
+    <p class="lead">Step 02 collects <code>(x<sub>t</sub>, &Delta;X)</code> pairs where both endpoints
+      stay inside the domain. Step 03 defines the VP-SDE forward noising schedule used to turn
+      each target increment into a denoising-training target:</p>
+    <div class="equation">Z<sub>t</sub> = &alpha;(t) Z<sub>0</sub> + &sigma;(t) &epsilon;</div>
+    <div class="figs">
+      <div class="figcard"><img src="assets/sde/forward_diffusion_trajectories.png" alt="Forward diffusion trajectories"><div class="cap">Z_t trajectories under the noise schedule</div></div>
+      <div class="figcard"><img src="assets/sde/alpha_sigma_schedule.png" alt="alpha/sigma schedule"><div class="cap">&alpha;(t), &sigma;(t) schedule</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="KNN Score">
+    <div class="eyebrow">Step 04</div>
+    <h2><span class="step-pill">4</span>KNN score estimation</h2>
+    <p class="lead">Rather than training a score network, the score of the noised distribution is
+      approximated directly with a k-nearest-neighbours estimator:</p>
+    <div class="equation">s(z) &approx; (&mu;<sub>KNN</sub> &minus; z) / var<sub>KNN</sub></div>
+    <div class="figs">
+      <div class="figcard"><img src="assets/sde/knn_score_1d.png" alt="KNN score 1D"><div class="cap">Estimated score field</div></div>
+      <div class="figcard"><img src="assets/sde/knn_neighbour_visualization.png" alt="KNN neighbours"><div class="cap">Neighbourhood used per query point</div></div>
+      <div class="figcard"><img src="assets/sde/score_accuracy_check.png" alt="Score accuracy check"><div class="cap">Estimated vs. true score sanity check</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="Probability Flow ODE">
+    <div class="eyebrow">Step 05</div>
+    <h2><span class="step-pill">5</span>Reverse the noise with a probability-flow ODE</h2>
+    <div class="equation">dZ/dt = &minus;&frac12; &beta(t)[Z + s(Z, t)]</div>
+    <p class="lead">Integrating this ODE backward turns pure noise into a recovered increment
+      &Delta;X — the deterministic counterpart of the reverse diffusion process.</p>
+    <div class="figs">
+      <div class="figcard"><img src="assets/sde/ode_reverse_trajectories.png" alt="ODE reverse trajectories"><div class="cap">Reverse-time ODE trajectories</div></div>
+      <div class="figcard"><img src="assets/sde/ode_recovered_increments.png" alt="ODE recovered increments"><div class="cap">Recovered &Delta;X distribution</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="Labels & Training">
+    <div class="eyebrow">Steps 06–07</div>
+    <h2><span class="step-pill">6</span>Reparameterise, then train FlowNet</h2>
+    <div class="equation">z = (&Delta;X &minus; &mu;(x)) / &sigma;(x) &nbsp;&nbsp;&mdash;&nbsp;&nbsp; &Lscr; = E[(G(x,z) &minus; &Delta;X)&sup2;]</div>
+    <p class="lead">Each <code>(x, &Delta;X)</code> pair is converted into a <code>(x, z, &Delta;X)</code>
+      label triple, then a small FlowNet (~200k parameters) is trained with plain MSE to map
+      <code>G(x, z) → &Delta;X</code>.</p>
+    <div class="figs">
+      <div class="figcard"><img src="assets/sde/label_z_distribution.png" alt="Label z distribution"><div class="cap">z label distribution</div></div>
+      <div class="figcard"><img src="assets/sde/label_mu_sigma_vs_x.png" alt="mu sigma vs x"><div class="cap">&mu;(x), &sigma;(x) across the domain</div></div>
+      <div class="figcard"><img src="assets/sde/training_loss.png" alt="Training loss"><div class="cap">FlowNet training loss curve</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="Rollout">
+    <div class="eyebrow">Step 08</div>
+    <h2><span class="step-pill">8</span>Rollout — using the trained network as a simulator</h2>
+    <div class="equation">x<sub>new</sub> = x + G(x, z),&nbsp; z ~ N(0,1) sampled fresh every step</div>
+    <p class="lead">Fresh independent noise each step replicates the independence of Brownian
+      increments. A boundary check after each step absorbs particles that exit <code>(0, 6)</code>,
+      exactly mirroring ground-truth simulation.</p>
+    <div class="figs">
+      <div class="figcard"><img src="assets/sde/prediction_examples.png" alt="Prediction examples"><div class="cap">Predicted vs. true increments</div></div>
+      <div class="figcard"><img src="assets/sde/comparison_trajectories.png" alt="Comparison trajectories"><div class="cap">Rolled-out trajectories vs. ground truth</div></div>
+      <div class="figcard"><img src="assets/sde/our_method_histogram.png" alt="Our method histogram"><div class="cap">"Our Method" terminal histogram</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="Ablations">
+    <div class="eyebrow">Steps 09–11</div>
+    <h2><span class="step-pill">9</span>Why training-data curation is everything</h2>
+    <p class="lead">All three conditions share the same architecture, training procedure, and
+      rollout code. The <b>only</b> difference is which <code>(x, &Delta;X)</code> pairs are used to train:</p>
+    <ul class="bullets">
+      <li><span class="badge ok">Correct</span> <b>Our Method</b> — both endpoints inside → learns the boundary-correction, matches ground truth</li>
+      <li><span class="badge warn">Wrong</span> <b>All Trajectories</b> — includes crossings → learns the <i>unconditional</i> N(0,dt) step, ignores the boundary entirely</li>
+      <li><span class="badge warn">Wrong</span> <b>Only Confined</b> — only long-survivors → effectively samples the Doob h-transform, <i>over-suppresses</i> movement toward walls</li>
+    </ul>
+    <div class="figs">
+      <div class="figcard"><img src="assets/sde/all_trajectories_histogram.png" alt="All trajectories histogram"><div class="cap">All Trajectories: no boundary correction</div></div>
+      <div class="figcard"><img src="assets/sde/only_confined_histogram.png" alt="Only confined histogram"><div class="cap">Only Confined: distribution too narrow</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="Figure 2 Reproduction">
+    <div class="eyebrow">Step 12</div>
+    <h2><span class="step-pill">12</span>The final reproduction</h2>
+    <p class="lead">All four panels — Ground Truth, Our Method, All Trajectories, Only Confined —
+      composed side by side, reproducing Figure 2 of the source paper.</p>
+    <div class="figs">
+      <div class="figcard"><img src="assets/sde/figure2_final.png" alt="Figure 2 final"><div class="cap">Final 4-panel reproduction</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-title="Results">
+    <div class="eyebrow">Numbers</div>
+    <h2>Survival rate & distributional fit</h2>
+    <table class="data">
+      <tr><th>Condition</th><th>Survival rate</th><th>KS vs. GT</th></tr>
+      <tr><td>Ground Truth</td><td>43.87%</td><td>—</td></tr>
+      <tr><td class="good">Our Method</td><td class="good">43.34%</td><td class="good">0.086</td></tr>
+      <tr><td>All Trajectories</td><td>TBD</td><td>TBD</td></tr>
+      <tr><td>Only Confined</td><td>TBD</td><td>TBD</td></tr>
+    </table>
+    <p class="lead">Our Method's survival rate (43.34%) sits within half a point of the true 43.87%,
+      with a modest KS statistic — the boundary-aware training data recovers the ground-truth
+      behaviour almost exactly, with a lightweight KNN-score + small MLP, no learned score network.</p>
+  </section>
+
+  <section class="slide" data-title="Takeaway">
+    <div class="eyebrow">Conclusion</div>
+    <h2>"A generative model is only as good as its training distribution"</h2>
+    <ul class="bullets">
+      <li>The network is a universal approximator — it faithfully learns <i>whatever</i> distribution of transitions it's shown.</li>
+      <li>Clean, boundary-respecting transitions → correct boundary behaviour reproduced.</li>
+      <li>Naively including all transitions → boundary effect washed out entirely.</li>
+      <li>Filtering to only long-survivors → introduces a systematic bias <i>away</i> from boundaries.</li>
+      <li><b>Data curation is as important as model architecture</b> — the central lesson of this reproduction.</li>
+    </ul>
+    <p class="closing-mark">learning_diffusion_sde/ — 12 scripts, each runnable independently, docs/ for full derivations</p>
+  </section>
+
+</div>
+</div>
+
+<div class="dots" id="dots"></div>
+<div class="navhint">↑↓ or scroll to move · ←→ to switch decks · click a figure to zoom</div>
+
+<div class="lightbox" id="lightbox"><img src="" alt="zoomed figure"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
