@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Questions I Had Before Starting This Research</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<div id="nav-dots"></div>
+
+<main>
+
+<!-- ======================= HOME ======================= -->
+<section id="home" data-nav="Home">
+  <div class="kicker">🤔 Questions I Had Before Starting This Research</div>
+  <h1>Learning Generative Models<br>for Physics</h1>
+  <p class="subtitle">Understanding Normalizing Flows, Diffusion Models, and Stochastic Differential Equations — one question at a time.</p>
+
+  <div class="roadmap">
+    <div class="rstep" data-target="s1">Why?</div>
+    <div class="rarrow">↓</div>
+    <div class="rstep" data-target="s2">What is randomness?</div>
+    <div class="rarrow">↓</div>
+    <div class="rstep" data-target="s2">What is Brownian Motion?</div>
+    <div class="rarrow">↓</div>
+    <div class="rstep" data-target="s3">What is an SDE?</div>
+    <div class="rarrow">↓</div>
+    <div class="rstep" data-target="s5">What is a Transport Problem?</div>
+    <div class="rarrow">↓</div>
+    <div class="rstep" data-target="s6">Why don't we solve PDEs directly?</div>
+    <div class="rarrow">↓</div>
+    <div class="rstep" data-target="s8">Why Generative AI?</div>
+    <div class="rarrow">↓</div>
+    <div class="rstep" data-target="s9">Normalizing Flows</div>
+    <div class="rarrow">↓</div>
+    <div class="rstep" data-target="s10">Diffusion Models</div>
+    <div class="rarrow">↓</div>
+    <div class="rstep" data-target="s13">Our Research</div>
+  </div>
+
+  <div class="scroll-hint">scroll to begin ↓</div>
+</section>
+
+<!-- ======================= SECTION 1 ======================= -->
+<section id="s1" data-nav="1. The problem">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 1</div>
+    <h2 class="section-title reveal">What problem are we trying to solve?</h2>
+    <p class="section-sub reveal">Imagine a single particle. An electric field pushes it one way. Random collisions
+      knock it around. Occasionally, it jumps — a huge collision all at once. Eventually it hits a boundary and
+      is gone.</p>
+    <div class="scene tall">
+      <canvas></canvas>
+      <div class="caption">constant field →</div>
+    </div>
+    <p class="section-sub reveal">Instead of predicting <b>one trajectory</b>, we want the probability of
+      <b>all possible trajectories</b> — the full distribution of where the particle could be.</p>
+  </div>
+</section>
+
+<!-- ======================= SECTION 2 ======================= -->
+<section id="s2" data-nav="2. Randomness">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 2</div>
+    <h2 class="section-title reveal">What is Brownian Motion?</h2>
+    <p class="section-sub reveal">No equations yet. Just 100 particles, moving randomly from the same starting point.
+      Drag the slider to move through time and watch the histogram appear.</p>
+    <div class="scene tall"><canvas></canvas></div>
+    <div class="controls">
+      <label>Time</label>
+      <input type="range" min="0" max="100" value="0" data-role="time-slider">
+      <button class="btn" data-role="play2">▶ Play</button>
+    </div>
+    <div class="eq" data-role="eq2" data-manual>dX = dW</div>
+  </div>
+</section>
+
+<!-- ======================= SECTION 3 ======================= -->
+<section id="s3" data-nav="3. SDE">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 3</div>
+    <h2 class="section-title reveal">What is an SDE?</h2>
+    <p class="section-sub reveal">Take the same random motion, and add a steady push — a drift. Hover the two
+      ingredients below to see each one isolated.</p>
+    <div class="scene tall"><canvas></canvas></div>
+    <div class="eq reveal">dX = <span class="term drift">b(X)dt</span> + <span class="term noise">&sigma;dW</span></div>
+    <div class="legend">
+      <div class="item" data-term="drift"><span class="swatch" style="background:var(--teal)"></span>Drift</div>
+      <div class="item" data-term="noise"><span class="swatch" style="background:var(--blue)"></span>Noise</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= SECTION 4 ======================= -->
+<section id="s4" data-nav="4. Jumps">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 4</div>
+    <h2 class="section-title reveal">What are jumps?</h2>
+    <p class="section-sub reveal">The particle moves normally — then suddenly, BOOM, it teleports.</p>
+    <div class="scene tall"><canvas></canvas></div>
+    <div class="eq reveal">dX = <span class="term drift">b(X)dt</span> + <span class="term noise">&sigma;dW</span><span class="term jump inline-reveal" data-role="jump-term" data-manual> + dJ</span></div>
+    <p class="section-sub reveal"><b>Brownian motion</b> = many tiny collisions. <b>A jump</b> = one huge collision.</p>
+  </div>
+</section>
+
+<!-- ======================= SECTION 5 ======================= -->
+<section id="s5" data-nav="5. Transport">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 5</div>
+    <h2 class="section-title reveal">What is a Transport Problem?</h2>
+    <p class="section-sub reveal">1000 particles start at exactly the same point. After some time, they spread out.
+      The histogram below updates live.</p>
+    <div class="scene tall"><canvas></canvas></div>
+    <div class="controls"><button class="btn" data-role="restart5">⟲ Restart</button></div>
+    <p class="section-sub reveal"><b>Can we predict where they will be?</b> That is the transport problem.</p>
+  </div>
+</section>
+
+<!-- ======================= SECTION 6 ======================= -->
+<section id="s6" data-nav="6. Why not PDEs">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 6</div>
+    <h2 class="section-title reveal">Why don't we solve the PDE directly?</h2>
+    <p class="section-sub reveal">The transport problem is governed by the heat equation (Fokker–Planck for zero drift):</p>
+    <div class="eq reveal">&part;p / &part;t = &half; &part;&sup2;p / &part;x&sup2;</div>
+    <p class="section-sub reveal">To solve it numerically, a computer has to grind through a huge system of equations —
+      one unknown per grid cell.</p>
+    <div class="scene tall">
+      <canvas></canvas>
+      <div class="caption" data-role="melt-caption" style="top:12px; right:12px; bottom:auto; left:auto; background:rgba(255,95,86,0.18); color:var(--red); font-weight:700; opacity:0; transition:opacity .6s;">🥵 Too expensive.</div>
+    </div>
+    <p class="section-sub reveal">Too expensive. We need another way.</p>
+  </div>
+</section>
+
+<!-- ======================= SECTION 7 ======================= -->
+<section id="s7" data-nav="7. Fokker–Planck">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 7</div>
+    <h2 class="section-title reveal">What is the Fokker–Planck equation?</h2>
+    <p class="section-sub reveal">Particles fall into a histogram. The histogram smooths into a curve.</p>
+    <div class="scene tall"><canvas></canvas></div>
+    <p class="section-sub reveal">Instead of tracking every particle, we track the <b>density</b> directly.</p>
+    <div class="eq reveal">&part;p/&part;t = &minus;&part;/&part;x[b(x)p] + &half;&part;&sup2;/&part;x&sup2;[&sigma;&sup2;p]</div>
+  </div>
+</section>
+
+<!-- ======================= SECTION 8 ======================= -->
+<section id="s8" data-nav="8. Why Gen AI">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 8</div>
+    <h2 class="section-title reveal">Why use Generative AI?</h2>
+    <p class="section-sub reveal">Instead of computing millions of particles every time, train <b>one neural network</b>
+      to imitate the distribution directly.</p>
+    <div class="scene tall"><canvas></canvas></div>
+  </div>
+</section>
+
+<!-- ======================= SECTION 9 ======================= -->
+<section id="s9" data-nav="9. Normalizing Flows">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 9</div>
+    <h2 class="section-title reveal">What is a Normalizing Flow?</h2>
+    <p class="section-sub reveal">Take a Gaussian cloud. Stretch it. Twist it. Warp it — like rubber — until it
+      becomes your target distribution.</p>
+    <div class="scene tall"><canvas></canvas></div>
+    <div class="controls">
+      <label>Warp amount</label>
+      <input type="range" min="0" max="100" value="0" data-role="warp-slider">
+      <button class="btn primary" data-role="warp-play">▶ Stretch → Twist → Warp</button>
+    </div>
+    <div class="eq" data-role="eq9-1" data-manual>x = f(z)</div>
+    <div class="eq" data-role="eq9-2" data-manual>z = f&#8315;&sup1;(x) &nbsp;&mdash;&nbsp; the inverse</div>
+    <div class="eq" data-role="eq9-3" data-manual>|det &part;f&frasl;&part;x| &nbsp;&mdash;&nbsp; the Jacobian: how volume stretches</div>
+    <div class="controls"><button class="btn" data-role="eq-next-9">Next (1/3)</button></div>
+  </div>
+</section>
+
+<!-- ======================= SECTION 10 ======================= -->
+<section id="s10" data-nav="10. Diffusion">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 10</div>
+    <h2 class="section-title reveal">What is a Diffusion Model?</h2>
+    <p class="section-sub reveal">Start with an image. Add noise. Add more. Add more. Eventually — TV static.
+      Now reverse the process: noise → image.</p>
+    <div class="scene tall"><canvas></canvas></div>
+    <div class="controls">
+      <button class="btn" data-role="diff-forward">Add noise →</button>
+      <button class="btn" data-role="diff-reverse">← Denoise</button>
+      <button class="btn" data-role="diff-reset">⟲ Reset</button>
+      <span class="section-sub" data-role="diff-phase" style="margin:0">clean</span>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= SECTION 11 ======================= -->
+<section id="s11" data-nav="11. NF vs Diffusion">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 11</div>
+    <h2 class="section-title reveal">Why are they different?</h2>
+    <p class="section-sub reveal">Same starting point, same destination — very different paths.</p>
+    <div class="split">
+      <div class="half">
+        <h3>Normalizing Flow</h3>
+        <div class="scene"><canvas data-role="split-nf"></canvas></div>
+        <div class="section-sub" style="text-align:center">Noise → Warp → status: <b data-role="nf-step-label">—</b></div>
+      </div>
+      <div class="half">
+        <h3>Diffusion</h3>
+        <div class="scene"><canvas data-role="split-diff"></canvas></div>
+        <div class="section-sub" style="text-align:center">Noise → step → step → step → status: <b data-role="diff-step-label">—</b></div>
+      </div>
+    </div>
+    <div class="controls" style="justify-content:center"><button class="btn primary" data-role="race-btn">▶ Compare</button></div>
+  </div>
+</section>
+
+<!-- ======================= SECTION 12 ======================= -->
+<section id="s12" data-nav="12. Which to use">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 12</div>
+    <h2 class="section-title reveal">Which one should I use?</h2>
+    <table class="decide reveal">
+      <thead><tr><th>Situation</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr><td>Need exact likelihood</td><td class="tag nf">Normalizing Flow</td></tr>
+        <tr><td>Need fastest sampling</td><td class="tag nf">Normalizing Flow</td></tr>
+        <tr><td>Images</td><td class="tag diff">Diffusion</td></tr>
+        <tr><td>Physics distribution</td><td class="tag both">Both</td></tr>
+        <tr><td>Density estimation</td><td class="tag nf">Normalizing Flow</td></tr>
+        <tr><td>Highest sample quality</td><td class="tag diff">Diffusion</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ======================= SECTION 13 ======================= -->
+<section id="s13" data-nav="13. Our research">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 13</div>
+    <h2 class="section-title reveal">What is our research?</h2>
+    <p class="section-sub reveal">Now, finally, the real SDE — drift, noise, and jumps together:</p>
+    <div class="eq reveal">dX = <span class="term drift">b(X)dt</span> + <span class="term noise">&sigma;dW</span> + <span class="term jump">dJ</span></div>
+    <p class="section-sub reveal">Instead of learning to generate images, we learn the exact conditional transport kernel:</p>
+    <div class="eq reveal">learn &nbsp; P(X<sub>t+&Delta;t</sub> | X<sub>t</sub>)</div>
+    <div class="scene tall"><canvas></canvas></div>
+  </div>
+</section>
+
+<!-- ======================= SECTION 14 ======================= -->
+<section id="s14" data-nav="14. Survivors only">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 14</div>
+    <h2 class="section-title reveal">Why train on survivors only?</h2>
+    <p class="section-sub reveal">Three datasets, same architecture, same training procedure — the only difference
+      is which transitions get used for training.</p>
+    <div class="panels">
+      <div class="panelcard ok">
+        <span class="tag2">Our Method ✓</span>
+        <img class="zoomable" src="../assets/sde/our_method_histogram.png" alt="Our method histogram">
+        <div class="cap2">Both endpoints inside the domain → matches ground truth</div>
+      </div>
+      <div class="panelcard bad">
+        <span class="tag2">All Trajectories ✗</span>
+        <img class="zoomable" src="../assets/sde/all_trajectories_histogram.png" alt="All trajectories histogram">
+        <div class="cap2">Includes boundary crossings → no boundary correction learned</div>
+      </div>
+      <div class="panelcard bad">
+        <span class="tag2">Only Confined ✗</span>
+        <img class="zoomable" src="../assets/sde/only_confined_histogram.png" alt="Only confined histogram">
+        <div class="cap2">Only long-survivors → distribution too narrow</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= SECTION 15 ======================= -->
+<section id="s15" data-nav="15. Exit network">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 15</div>
+    <h2 class="section-title reveal">Why do we need an Exit Network?</h2>
+    <p class="section-sub reveal">A particle hits the wall and disappears. A small neural network predicts whether
+      it exits — if yes, remove it; if no, hand it to the flow map.</p>
+    <div class="scene tall"><canvas></canvas></div>
+  </div>
+</section>
+
+<!-- ======================= SECTION 16 ======================= -->
+<section id="s16" data-nav="16. Speed">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 16</div>
+    <h2 class="section-title reveal">Why is this faster?</h2>
+    <p class="section-sub reveal">Euler–Maruyama needs hundreds of tiny steps. The flow map needs one.</p>
+    <div class="split">
+      <div class="half">
+        <h3>Euler–Maruyama</h3>
+        <div class="scene short"><canvas data-role="euler-canvas"></canvas></div>
+        <div class="section-sub" style="text-align:center">steps: <b data-role="euler-count">0</b> / 200</div>
+      </div>
+      <div class="half">
+        <h3>Flow Map</h3>
+        <div class="scene short"><canvas data-role="flowmap-canvas"></canvas></div>
+        <div class="section-sub" style="text-align:center">steps: <b data-role="flow-count">0</b> / 1</div>
+      </div>
+    </div>
+    <div class="controls" style="justify-content:center"><button class="btn primary" data-role="race16-btn">▶ Race</button></div>
+    <div style="text-align:center; margin-top:22px;">
+      <div class="big-number" data-role="big-number">1.0×</div>
+      <div class="big-number-label">faster — measured speedup on the bounded-domain rollout</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= SECTION 17 ======================= -->
+<section id="s17" data-nav="17. Runaway electrons">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Question 17</div>
+    <h2 class="section-title reveal">Where is this going?</h2>
+    <p class="section-sub reveal">A tokamak. A particle. An electric field. Jumps. A separatrix.</p>
+    <div class="scene tall"><canvas></canvas></div>
+    <p class="section-sub reveal">The 1D example is only a verification. The real goal is learning the stochastic
+      flow map of the 2D runaway-electron problem — replacing many small integration steps with one learned,
+      large-step transition.</p>
+    <div class="footer-cta"></div>
+  </div>
+</section>
+
+</main>
+
+<div class="lightbox" id="lightbox"><img src="" alt="zoomed figure"></div>
+
+<script src="js/utils.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
