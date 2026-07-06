@@ -161,6 +161,45 @@
     </div>
   </section>
 
+  <section class="slide" data-title="Hardware & GPU Usage">
+    <div class="eyebrow">Hardware</div>
+    <h2>Every run — GPU, auto-detected, with mixed precision</h2>
+    <p class="lead">Both models trained and sampled on the <b>same GPU (CUDA)</b> with the <b>same
+      mixed-precision settings</b> — hardware is not a confound in this benchmark, only the
+      architecture differs.</p>
+    <div class="codeblock"><span class="c1"># jump1d/comparison/utils.py</span>
+<span class="kw">def</span> <span class="fn">get_device</span>(cfg: Config) -> torch.device:
+    <span class="kw">if</span> cfg.device == <span class="str">"auto"</span>:
+        <span class="kw">return</span> torch.device(<span class="str">"cuda"</span> <span class="kw">if</span> torch.cuda.is_available() <span class="kw">else</span> <span class="str">"cpu"</span>)
+    <span class="kw">return</span> torch.device(cfg.device)
+
+<span class="kw">def</span> <span class="fn">amp_enabled</span>(cfg: Config, device: torch.device) -> bool:
+    <span class="kw">return</span> bool(cfg.amp) <span class="kw">and</span> device.type == <span class="str">"cuda"</span>  <span class="c1"># AMP only engages on CUDA</span>
+
+<span class="kw">class</span> <span class="fn">GpuMemoryTracker</span>:
+    <span class="c1">"""Resets CUDA's peak-memory counter on entry, reads it back on exit."""</span>
+    <span class="kw">def</span> <span class="fn">__enter__</span>(self):
+        <span class="kw">if</span> self.device.type == <span class="str">"cuda"</span>:
+            torch.cuda.reset_peak_memory_stats(self.device)
+        <span class="kw">return</span> self
+    <span class="kw">def</span> <span class="fn">__exit__</span>(self, *exc):
+        <span class="kw">if</span> self.device.type == <span class="str">"cuda"</span>:
+            self.peak_bytes = torch.cuda.max_memory_allocated(self.device)</div>
+    <ul class="bullets">
+      <li><code>Config.device = "auto"</code> — picks CUDA if available, falling back to CPU only
+        when no GPU is present.</li>
+      <li><code>Config.amp = True</code> — <code>torch.cuda.amp</code> mixed precision is enabled by
+        default, but only takes effect when the device is CUDA (no-op on CPU).</li>
+      <li><code>GpuMemoryTracker</code> is exactly how the <b>37.3 MB</b> (RealNVP) and
+        <b>180.4 MB</b> (DDPM) peak-memory figures in the results table and Figure 08 were measured —
+        <code>torch.cuda.reset_peak_memory_stats()</code> at the start of training,
+        <code>torch.cuda.max_memory_allocated()</code> at the end.</li>
+      <li>Because both models ran on identical hardware and precision, the <b>~3,800× sampling-speed
+        gap</b> (Figure 07) is attributable entirely to architecture — RealNVP's single forward pass
+        vs. DDPM's iterative reverse chain — not to any difference in how GPU resources were used.</li>
+    </ul>
+  </section>
+
   <section class="slide" data-title="09 Rollout Comparison">
     <div class="eyebrow">Figure 09</div>
     <h2>Multi-step rollout comparison</h2>
@@ -181,6 +220,9 @@
         <b>~5×</b> less GPU memory — and wins on Wasserstein distance and exact NLL.</li>
       <li><b>DDPM</b> wins decisively on KL divergence and Hellinger distance (bulk-of-distribution
         fit), at the cost of an iterative sampler ~3,800× slower.</li>
+      <li>Both models trained and sampled on the <b>same GPU with the same mixed-precision
+        settings</b> (<code>device="auto"</code>, <code>amp=True</code>) — the speed and memory
+        gaps above are architecture effects, not a hardware artifact.</li>
       <li>The inverted ranking (RealNVP best on Wasserstein, worst on KL/Hellinger, and vice versa
         for DDPM) shows <b>no single metric tells the whole story</b> — Wasserstein is sensitive to
         outliers/tails, KL and Hellinger to bulk overlap.</li>
