@@ -215,6 +215,25 @@ ul.bullets code { color: var(--accent2); }
 .badge.warn { background: rgba(248,81,73,0.15); color: var(--bad); }
 .badge.info { background: rgba(88,166,255,0.15); color: var(--accent); }
 
+.codeblock {
+  background: #0a0d13;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent2);
+  border-radius: 8px;
+  padding: 16px 20px;
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #d5dde6;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 14px 0;
+}
+.codeblock .c1 { color: var(--muted); font-style: italic; }
+.codeblock .kw { color: var(--accent2); }
+.codeblock .fn { color: var(--accent); }
+.codeblock .str { color: var(--good); }
+
 .title-slide { align-items: flex-start; }
 .title-slide .tag {
   color: var(--muted);
