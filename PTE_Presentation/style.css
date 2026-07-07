@@ -390,6 +390,7 @@ td.tag.both { color: var(--yellow); background: rgba(255,213,79,0.12); }
 .panelcard .cap2 { color: var(--muted); font-size: 13px; margin-top: 8px; text-align: center; }
 .panelcard.ok .tag2 { color: var(--green); background: rgba(102,187,106,0.12); }
 .panelcard.bad .tag2 { color: var(--red); background: rgba(255,95,86,0.12); }
+.panelcard.info .tag2 { color: var(--blue); background: rgba(79,195,247,0.12); }
 
 /* ---------------- number counter (section 16) ---------------- */
 .big-number {
