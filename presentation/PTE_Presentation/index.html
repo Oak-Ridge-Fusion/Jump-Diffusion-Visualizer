@@ -217,6 +217,47 @@
   </div>
 </section>
 
+<!-- ======================= SECTION 11b ======================= -->
+<section id="s11b" data-nav="11b. Our benchmark">
+  <div class="section-inner">
+    <div class="q-tag reveal">❓ Bonus Question</div>
+    <h2 class="section-title reveal">Which model did we actually use — and which won?</h2>
+    <p class="section-sub reveal">We benchmarked exactly these two architectures — a <b>Conditional RealNVP</b>
+      (normalizing flow) and a <b>Conditional DDPM</b> (diffusion) — against the same conditional
+      transition density from our bounded jump-diffusion SDE, on identical data, on the same GPU.</p>
+
+    <table class="decide reveal">
+      <thead><tr><th>Metric</th><th>RealNVP</th><th>DDPM</th><th>Winner</th></tr></thead>
+      <tbody>
+        <tr><td>Wasserstein-1</td><td>0.0555</td><td>2.819</td><td class="tag nf">RealNVP</td></tr>
+        <tr><td>KL divergence</td><td>0.0283</td><td>0.00016</td><td class="tag diff">DDPM</td></tr>
+        <tr><td>Hellinger</td><td>0.108</td><td>0.00898</td><td class="tag diff">DDPM</td></tr>
+        <tr><td>Sampling rate</td><td>3,117,575 /s</td><td>820 /s</td><td class="tag nf">RealNVP (~3,800×)</td></tr>
+        <tr><td>Training time</td><td>870.4 s</td><td>574.8 s</td><td class="tag diff">DDPM</td></tr>
+        <tr><td>Peak GPU memory</td><td>37.3 MB</td><td>180.4 MB</td><td class="tag nf">RealNVP (~5×)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="panels">
+      <div class="panelcard info">
+        <span class="tag2">Sampling Speed</span>
+        <img class="zoomable" src="../assets/comparison/07_sampling_speed.png" alt="Sampling speed comparison">
+        <div class="cap2">RealNVP: one forward pass. DDPM: a full iterative reverse chain.</div>
+      </div>
+      <div class="panelcard info">
+        <span class="tag2">GPU Memory</span>
+        <img class="zoomable" src="../assets/comparison/08_gpu_memory.png" alt="GPU memory comparison">
+        <div class="cap2">Peak memory during training — same GPU, same mixed-precision settings.</div>
+      </div>
+    </div>
+
+    <p class="section-sub reveal">No single winner: <b>RealNVP</b> is ~3,800× faster to sample and uses ~5× less
+      GPU memory, while <b>DDPM</b> matches the bulk of the distribution more closely (KL, Hellinger). Both
+      trained on the <b>same GPU</b> with the same mixed-precision settings — the gaps above are architecture
+      effects, not a hardware artifact.</p>
+  </div>
+</section>
+
 <!-- ======================= SECTION 12 ======================= -->
 <section id="s12" data-nav="12. Which to use">
   <div class="section-inner">
