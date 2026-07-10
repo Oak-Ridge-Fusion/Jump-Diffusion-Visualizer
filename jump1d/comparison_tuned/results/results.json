@@ -1,0 +1,26 @@
+[
+  {
+    "model": "Conditional RealNVP",
+    "wasserstein": 0.049648766042624734,
+    "kl_divergence": 0.025448202309927802,
+    "hellinger": 0.10100935945458932,
+    "mmd": -0.00016987323760986328,
+    "nll": 0.8659113645553589,
+    "sampling_rate_samples_per_s": 961037.8564349182,
+    "sampling_time_s": 0.03228592900086369,
+    "training_time_s": 2264.702257004,
+    "peak_gpu_mem_mb": 112.72704
+  },
+  {
+    "model": "Conditional DDPM",
+    "wasserstein": 0.4143775077472631,
+    "kl_divergence": 0.0002902075966412488,
+    "hellinger": 0.0120443869494846,
+    "mmd": -0.00015211105346679688,
+    "nll": null,
+    "sampling_rate_samples_per_s": 4295.63237490031,
+    "sampling_time_s": 7.223150701000122,
+    "training_time_s": 706.5298548810006,
+    "peak_gpu_mem_mb": 180.36224
+  }
+]
