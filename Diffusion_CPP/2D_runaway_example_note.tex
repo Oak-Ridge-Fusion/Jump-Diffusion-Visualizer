@@ -1,0 +1,549 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\title{Learning Flow Maps of Jump-Diffusion SDEs:\\
+A Runaway-Electron Target and a 1D Verification}
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Overview.} The eventual target is a 2D runaway-electron (RE)
+model whose dynamics are naturally a stochastic differential equation (SDE) with
+jumps on a bounded momentum domain. We plan to learn its large-time stochastic
+flow map with a training-free diffusion model, plus an exit indicator for the
+boundary. Before the physics problem we verify the approach on a 1D bounded
+jump-diffusion, comparing the learned model against the classical numerical
+method in accuracy, speed, and long-horizon trajectory prediction.
+
+%======================================================================
+\section{The eventual target: a 2D runaway-electron model}
+%======================================================================
+
+\paragraph{The model.} We track a single relativistic electron in 2D momentum
+space,
+\begin{equation}
+X_t = (p,\ \xi), \qquad p=\text{normalized momentum}, \quad
+\xi=\cos\theta=\text{pitch-angle cosine},
+\end{equation}
+driven by the toroidal electric field, collisional drag and scattering, and rare
+large-angle collisions. The dynamics take the jump-diffusion form
+\begin{equation}
+\label{eq:jdsde}
+dX_t = \underbrace{b(X_t)\,dt}_{\text{drift}}
+     + \underbrace{\sigma(X_t)\,dW_t}_{\text{diffusion}}
+     + \underbrace{\int \gamma(X_{t^-},z)\,\tilde N(dt,dz)}_{\text{jumps}},
+\end{equation}
+with the three pieces given concretely by
+\begin{align}
+b_p &= \hat E\,\xi - F_{\rm drag}(p), &
+F_{\rm drag}(p) &\sim \tfrac{1+p^2}{p^2}, \\
+b_\xi &= \frac{\hat E\,(1-\xi^2)}{p}, &
+d\xi &\supset \sqrt{2\,\nu_D(p)\,(1-\xi^2)}\;dW_\xi ,
+\end{align}
+where $\hat E=E/E_c$ is the normalized field, $F_{\rm drag}$ is the collisional
+friction (it falls off as $\sim 1/v^2$ at high $p$, which is why runaways exist),
+and $\nu_D$ is the pitch-angle scattering rate. The momentum domain is bounded by
+the \emph{runaway separatrix} $p_c$: below it the electron rejoins the thermal
+bulk (an exit/absorbing boundary).
+
+\paragraph{Why it is an SDE with jumps.} The full Coulomb collision operator
+splits into a small-angle part and a large-angle part. The small-angle
+(grazing) collisions accumulate into the Gaussian diffusion $\sigma\,dW$ (the
+classical Fokker--Planck picture). The rare large-angle, close (``knock-on'')
+collisions transfer a large momentum chunk in a single event; these are discrete,
+Poisson-timed, and heavy-tailed (M{\o}ller cross-section
+$d\Sigma/d\epsilon\propto\epsilon^{-2}$), i.e.\ exactly the jump term in
+Eq.~\eqref{eq:jdsde}~\cite{embreus2018}. The same large-angle collisions drive
+the runaway \emph{avalanche}~\cite{rosenbluth1997}; here we keep the
+single-particle jump-diffusion and treat the avalanche as the motivating context.
+Framing runaway generation through the separatrix $p_c$ as an exit problem
+matches existing RE methodology~\cite{delcastillo_exit}.
+
+\paragraph{What we plan to do.} Rather than integrating Eq.~\eqref{eq:jdsde} with
+many small time steps, we will learn its \emph{stochastic flow map} --- the
+one-step transition density $p(X_{t+\Delta t}\mid X_t)$ at a \emph{large}
+$\Delta t$ --- with a training-free diffusion model~\cite{liu2024,yang2025}, plus
+an exit indicator for the $p_c$ boundary~\cite{yang2025}. One evaluation of the
+learned map then advances the state by a large step, replacing many integrator
+sub-steps. The new ingredient relative to existing diffusion flow-map work is the
+\emph{jump} term, which is the subject of the verification below.
+
+%======================================================================
+\section{A 1D verification example}
+%======================================================================
+
+We verify the approach on a 1D jump-diffusion in a \emph{bounded} domain with an
+absorbing boundary --- the structure the 2D runaway-electron problem needs (jumps,
+a large-$\Delta t$ flow map, and exit across the separatrix). We learn two
+objects, a flow map for the in-domain transition and an \emph{exit indicator} for
+the boundary, and compare against the classical numerical method in accuracy,
+speed, and long-horizon trajectory prediction.
+
+\paragraph{The model.} A 1D jump-diffusion on $[0,6]$ with absorbing ends,
+\begin{equation}
+dX_t = \sigma_b\,dW_t + dJ_t, \qquad X_t \in [0,6],
+\end{equation}
+with $J_t$ a compound-Poisson process (rate $1$, jumps $Y\sim\mathcal N(0,0.7^2)$),
+$\sigma_b=0.7$, and a large step $\Delta t=1$. A particle that crosses either end
+leaves the domain (exits). The ground truth is a fine-step jump-adapted
+Euler--Maruyama integrator with the same boundaries.
+
+\paragraph{The exit-indicator idea.} Surviving particles stay inside $[0,6]$ by
+construction, so the flow map is only ever evaluated in-domain --- over
+arbitrarily long rollouts. We learn the boundary with a binary classifier
+$\mathcal E(x)=\Pr(\text{exit during }\Delta t \mid x)$, trained by cross-entropy
+on labeled survive/exit data (the JCP exit indicator of~\cite{yang2025}). One
+coarse step is \emph{exit, then propagate}: $\mathcal E$ removes the particles
+that cross the boundary, and the flow map --- trained only on \emph{surviving}
+transitions --- advances the rest. Over a long rollout this tracks both the
+decaying surviving population and the surviving distribution, with the flow map
+always in-domain. This mirrors the runaway-electron separatrix $p_c$, where
+particles leave the runaway region into the thermal bulk.
+
+\paragraph{What we did.} Generate large-$\Delta t$ data from the bounded SDE:
+survivor pairs $(X_t,X_{t+\Delta t})$ and exit labels $(X_t,\text{exit?})$. Learn
+the survivor flow map with the training-free method --- learn the increment
+$X_{t+\Delta t}-X_t$ via a probability-flow ODE with a training-free Monte-Carlo
+score, distilled into a small network --- and the exit indicator by cross-entropy.
+At inference, roll the two heads forward and compare against the numerical method.
+
+\paragraph{Accuracy (one step).} Figure~\ref{fig:b1} verifies the two heads
+in-domain: the exit indicator recovers the U-shaped exit probability (high at the
+walls, near zero mid-domain), and the survivor transition density matches the
+numerical truth ($W_1=0.004$ and $0.015$ at $x=1.5,3.0$).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{jump1d/figs/B1_onestep.png}
+\caption{One step. Left: exit probability $\Pr(\text{exit}\mid x)$, exit indicator
+(red) vs.\ numerical (black). Middle/right: survivor transition density, flow map
+(red) vs.\ numerical survivors (gray), at $x=1.5,3.0$.}
+\label{fig:b1}
+\end{figure}
+
+\paragraph{Long-horizon trajectory and speed.} Figure~\ref{fig:b2} propagates to
+$T=8$ ($K=8$ big ML steps vs.\ the integrator's $8\times200=1600$ sub-steps). The
+ML rollout tracks the \emph{surviving fraction} at every step (final $0.316$
+vs.\ $0.318$, a $0.6\%$ error) and reproduces the \emph{terminal surviving
+density} ($W_1=0.010$, near the sampling floor), about $40\times$ faster than the
+numerical method. The structural reason for the speedup is that the learned map
+advances the state in one big step rather than many sub-steps.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{jump1d/figs/B2_rollout.png}
+\caption{Long rollout to $T=8$. Left: surviving fraction vs.\ step, ML rollout
+(red) vs.\ numerical (black). Right: terminal surviving density at $T=8$, ML (red)
+vs.\ numerical (gray), $W_1=0.010$. The ML map takes $8$ big steps vs.\ the
+integrator's $1600$ small steps. (Wall-clock is indicative: integrator on CPU,
+network on GPU; the hardware-independent statement is $8$ vs.\ $1600$ steps.)}
+\label{fig:b2}
+\end{figure}
+
+
+
+
+
+\newpage
+
+%======================================================================
+\section{Problem settings for independent reproduction}
+\label{sec:settings}
+
+This section is written to be handed out on its own: it is self-contained,
+restates every equation it needs, and cites the literature in full. It
+poses four problems on learning large-time stochastic flow maps of
+jump-diffusion SDEs, in increasing order of difficulty --- each problem
+adds one ingredient to the previous one. Only the problem settings are
+given: the model with every parameter value, the reference numerical
+method, the objects to learn, the tests to run, and the results to expect
+(with the error magnitudes we measured in our own implementation). No
+implementation is provided --- build your own codes for the reference
+integrator, the data generation, the learned model, and the comparisons;
+at most, the training-data generation code may be shared as a starting
+point. Two remarks. First, treat the quoted numbers as targets of
+\emph{magnitude}, not answers: Monte-Carlo noise, training stochasticity,
+and implementation choices all move them. Second, the method itself is
+not a finished principle. Where your results deviate from the
+expectations below, or where the construction feels fragile --- heavy
+tails, steep exit fronts, the calibration of small exit probabilities ---
+that is a starting point for independent research, not necessarily an
+error to fix.
+
+\paragraph{The task, in general.} All four problems concern a
+jump-diffusion SDE
+\begin{equation*}
+dX_t = b(X_t)\,dt + \sigma(X_t)\,dW_t + dJ_t,
+\end{equation*}
+with $J_t$ a compound-Poisson jump process, on a domain $D$ that is
+either bounded with absorbing boundaries (Problems 1--3) or periodic
+(Problem 4). Instead of integrating with many small time steps, learn the
+\emph{one-step transition law at a large coarse step} $\Delta t$ directly
+from data: a generative map $G(x,z)$, $z\sim\mathcal N(0,I)$, such that
+$G(x,z)$ is distributed like $X_{t+\Delta t}$ given $X_t=x$. On a bounded
+domain the one-step kernel is a sub-probability kernel (particles can
+exit), which factorizes into two learning problems,
+\begin{equation*}
+P_{\Delta t}(x,A)\;=\;\bigl(1-\mathcal E(x)\bigr)\,
+P^{\rm surv}_{\Delta t}(x,A), \qquad A\subseteq D,
+\end{equation*}
+where $\mathcal E(x)=\Pr(\text{exit during }\Delta t\mid X_t=x)$ is a
+classifier (the \emph{exit indicator}) trained on exit labels, and
+$P^{\rm surv}_{\Delta t}$ is the flow map trained on \emph{surviving}
+transitions only. One coarse step of the learned model is \emph{exit,
+then propagate}: the indicator removes the exiting particles, the flow
+map advances the rest. Since survivors stay in $D$ by construction, the
+flow map is never evaluated out-of-domain, over arbitrarily long
+rollouts. We use the training-free diffusion flow map of Y.~Liu, M.~Yang,
+Z.~Zhang, F.~Bao, Y.~Cao, G.~Zhang, \emph{J.~Machine Learning for
+Modeling and Computing} \textbf{5}(1), 25 (2024) and M.~Yang, Y.~Liu,
+D.~del-Castillo-Negrete, Y.~Cao, G.~Zhang, \emph{J.~Comput.\ Phys.}
+114434 (2025); any conditional generative model is admissible, and
+comparing families is itself a worthwhile experiment.
+
+\paragraph{Common setup.}
+\begin{itemize}[leftmargin=1.4em]
+\item \emph{Reference method (and data generator).} Jump-adapted
+  Euler--Maruyama: split the coarse step $\Delta t$ into $n_{\rm sub}$
+  sub-steps, draw the jump events of the compound-Poisson term by Poisson
+  sampling (thinning where the rate is state-dependent), integrate drift
+  and diffusion between jumps, and, on bounded domains, test absorption at
+  every sub-step. Before judging any learned model, verify the
+  \emph{reference's own} convergence by comparing at least two values of
+  $n_{\rm sub}$ against a finer one on the observables you will report.
+\item \emph{Training data.} Pairs $(X_t, X_{t+\Delta t})$ generated by
+  the reference integrator from starts sampled over the domain, one
+  coarse step each; on bounded domains, split into survivor pairs (for
+  the flow map) and exit labels (for the indicator).
+\item \emph{Evaluation.} Compare distributions by the Wasserstein-1
+  distance of marginals (estimate the sampling floor by splitting the
+  reference sample in half), exit and fate probabilities by their
+  absolute errors against the Monte-Carlo reference, and always report
+  the step-count ratio (coarse steps vs.\ integrator sub-steps) alongside
+  any wall-clock speedup.
+\end{itemize}
+
+%----------------------------------------------------------------------
+\subsection{Problem 1: 1D bounded jump-diffusion, constant coefficients}
+%----------------------------------------------------------------------
+
+\paragraph{Setting.}
+\begin{equation*}
+dX_t = \sigma_b\,dW_t + dJ_t \quad\text{on } [0,6],
+\qquad \text{absorbing at both ends,}
+\end{equation*}
+with $\sigma_b=0.4$ and $J_t$ compound Poisson with rate $\lambda=1$ and
+jump sizes $Y\sim\mathcal N(\mu_Y,\sigma_Y^2)=\mathcal N(1.5,\,0.3^2)$.
+Coarse step $\Delta t=1$; horizon $T=4$ ($K=4$ coarse steps) --- about
+the longest horizon at which both test starts below retain usable
+survivor statistics. Reference: $n_{\rm sub}=200$ sub-steps per coarse
+step; use $\ge 2\times10^5$ particles per test. Suggested training set:
+$4\times10^5$ coarse-step transitions from uniformly sampled starts.
+
+\paragraph{Tests.} (B0) The one-step transition from the fixed starts
+$x_0=1$ and $x_0=5$, plotted as \emph{sub-probability} densities
+(normalized by the particles started, so exit mass appears as missing
+area); in free space (no boundary) the density has the closed form of a
+jump-count mixture,
+\begin{equation*}
+p_{\Delta t}(y\mid x_0)=\sum_{n\ge0}\mathrm{Pois}(n;\lambda\Delta t)\;
+\mathcal N\!\bigl(y;\ x_0+n\mu_Y,\ \sigma_b^2\Delta t+n\sigma_Y^2\bigr),
+\end{equation*}
+--- overlay it. (B1) The exit-probability curve
+$\Pr(\text{exit}\mid x)$ over the domain and the survivor densities at
+$x=1.5,\,3$. (B2) The rollout to $T=4$ from both starts: surviving
+fraction at every coarse step and the terminal surviving density.
+
+\paragraph{What to expect.} A strongly multi-modal one-step density with
+modes near $x_0+1.5n$; an \emph{asymmetric} exit curve --- diffusive near
+the lower wall, rising well before the upper wall, where exits are
+jump-driven and nonlocal; survival at $T=4$ of $\approx0.35$ from $x_0=1$
+and $\approx0.02$ from $x_0=5$. A well-trained flow map reaches survivor
+$W_1\sim10^{-2}$. The hard part is the jump-driven exit layer near the
+upper wall: our exit indicator gives $0.575$ vs.\ the true $0.615$ at
+$x_0=5$, and that one-step underestimate compounds visibly over the
+rollout (final survival $0.032$ vs.\ $0.023$). The step-count ratio is
+$4$ vs.\ $800$; our wall-clock speedup was $\approx78\times$.
+
+%----------------------------------------------------------------------
+\subsection{Problem 2: 1D bounded jump-diffusion, state-dependent
+coefficients}
+%----------------------------------------------------------------------
+
+\paragraph{Setting.} Same domain, boundaries, coarse step, learned
+objects, reference, sample sizes, and tests (from the same starts
+$x_0=1,5$), but every coefficient now depends on the state:
+\begin{equation*}
+dX_t = \kappa\,(x^*-X_t)\,dt + \sigma(X_t)\,dW_t + dJ_t^{\lambda(X_t)}
+\quad\text{on } [0,6],
+\end{equation*}
+with $\kappa=0.5$, $x^*=2.5$, $\sigma(x)=0.3+0.05x$, jump rate
+$\lambda(x)=1.3-0.15x$, and jump sizes
+$Y\mid x\sim\mathcal N(1.5-0.08x,\,0.3^2)$. There is no closed-form
+overlay here --- the fine-step histogram is the reference. The horizon is
+$T=8$ ($K=8$): the mean-reverting drift keeps survival healthy, so the
+compositional test can run twice as long as in Problem~1. This is the
+first problem where the conditioning on $x$ is actually exercised (and
+where the classical method has no large-step shortcut).
+
+\paragraph{What to expect.} The one-step law varies visibly with the
+state: bimodal from $x_0=1$ (high rate, large kicks), a single
+drift-shifted bump from $x_0=5$ (low rate, downward drift). Survival at
+$T=8$ of $\approx0.63$ from $x_0=1$ and $\approx0.45$ from $x_0=5$;
+terminal $W_1$ near the sampling floor (a few $10^{-3}$). Note the
+expectation: this example should come out \emph{more} accurate than
+Problem~1, because the accuracy-limiting feature there is the sharp exit
+layer, not the conditioning. If your state-dependent run is much worse
+than your constant-coefficient one, inspect the conditioning (input
+normalization, coverage of the training starts) before anything else.
+
+%----------------------------------------------------------------------
+\subsection{Problem 3: a 2D runaway-electron model}
+%----------------------------------------------------------------------
+
+\paragraph{Background.} A relativistic electron in a plasma with an
+electric field above the critical field can ``run away'': collisional
+friction falls off with velocity, so a fast-enough electron accelerates
+without bound. Small-angle Coulomb collisions act as drift and diffusion;
+rare large-angle (``knock-on'') collisions transfer a large momentum
+fraction in single events --- exactly a jump term. The state is
+$X=(p,\xi)$ with $p$ the momentum in units of $m_ec$ and
+$\xi=\cos\theta$ the pitch-angle cosine; time is in relativistic
+collision times $\tau_c$, the field $\hat E=E/E_c$ in units of the
+critical field.
+
+\paragraph{Setting: drift and diffusion.} The test-particle model of
+G.~Zhang and D.~del-Castillo-Negrete, \emph{Phys.\ Plasmas} \textbf{24},
+092511 (2017), Eqs.~(5)--(6):
+\begin{align*}
+dp &= \Bigl[\hat E\,\xi \;-\; \bar f\,\frac{1+p^2}{p^2} \;-\;
+      \frac{\gamma p\,(1-\xi^2)}{\tau_{\rm syn}}\Bigr]\,dt \;+\; dJ_t,\\
+d\xi &= \Bigl[\frac{\hat E\,(1-\xi^2)}{p} \;+\;
+      \frac{\xi(1-\xi^2)}{\tau_{\rm syn}\gamma} \;-\; \xi\,\nu_c\Bigr]\,dt
+      \;+\; \sqrt{\nu_c\,(1-\xi^2)}\;dW \;+\; dJ^\xi_t,
+\qquad \nu_c=\bigl(Z+\bar f\,\bigr)\frac{\gamma}{p^3},
+\end{align*}
+with $\gamma=\sqrt{1+p^2}$; note $dp$ carries no Brownian term --- all
+momentum-space randomness enters through the jumps. Parameters:
+$\hat E=2$, $Z=1$, $\ln\Lambda=15$, $\tau_{\rm syn}=100$. The factor
+$\bar f=\overline{\ln\Lambda}/\ln\Lambda$ is defined with the jump term
+below.
+
+\paragraph{Setting: the knock-on jump process.} All formulas from
+O.~Embr\'eus, A.~Stahl, T.~F\"ul\"op, \emph{J.~Plasma Phys.} \textbf{84},
+905840102 (2018):
+\begin{itemize}[leftmargin=1.4em]
+\item \emph{Rate}: $\lambda(p)=\tfrac12 nv\,\sigma(p)$, with $\sigma(p)$
+  the M{\o}ller cross section integrated over energy transfers
+  $\epsilon\in[\epsilon_{\min},(\gamma-1)/2]$ --- an analytic closed form,
+  their Eq.~(35); the upper limit is the indistinguishability bound. In
+  $\tau_c$ units: $\lambda\tau_c=R\,\beta\,\hat\sigma/(4\ln\Lambda)$ with
+  $\hat\sigma=\sigma/(2\pi r_0^2)$, $\beta=p/\gamma$, and
+  $R=n_{\rm tot}/n_e=1$ here.
+\item \emph{Jump law}: the transferred energy $\epsilon$ follows the
+  M{\o}ller spectrum, their Eq.~(5), heavy-tailed
+  $\propto\epsilon^{-2}$. The retained electron (the more energetic
+  outgoing branch, guaranteed by $\epsilon\le(\gamma-1)/2$) has
+  $\gamma'=\gamma-\epsilon$ and is deflected by
+  $\cos\theta_d=\sqrt{(\gamma'-1)(\gamma+1)/\bigl((\gamma'+1)(\gamma-1)\bigr)}$,
+  their Eq.~(6), with uniform azimuth.
+\item \emph{No double counting}: transfers below $\epsilon_{\min}$ remain
+  in the drift-diffusion coefficients, whose electron-electron Coulomb
+  logarithm is reduced,
+  $\overline{\ln\Lambda}=\ln\Lambda-\tfrac12
+  \ln[(\gamma-\gamma_m)/(\gamma_m-1)]$ with
+  $\gamma_m=1+\epsilon_{\min}$, their Eqs.~(13)--(14). The reduction
+  factor $\bar f$ multiplies the drag and the electron-electron unit of
+  $\nu_c$ (not the electron-ion $Z$ part, which has no jump channel), as
+  written in the equations above. Take $\epsilon_{\min}=0.02$.
+\end{itemize}
+
+\paragraph{Setting: domain and problem sizes.} $(p,\xi)\in[1,10]\times[-1,1]$,
+absorbing at both $p$-ends ($p<1$: thermalization; $p>10$: confirmed
+runaway), reflecting at $\xi=\pm1$ (the pitch diffusion vanishes there).
+Coarse step $\Delta t=1\,\tau_c$; horizon $T=10\,\tau_c$ ($K=10$). The
+exit indicator now has \emph{three classes}: survive / exit $p_{\min}$ /
+exit $p_{\max}$. Suggested training set: $6\times10^5$ coarse-step
+transitions from uniform starts.
+
+\paragraph{Reference discipline.} This problem is where validating the
+reference becomes serious. (i)~Scan $n_{\rm sub}$: we found
+$n_{\rm sub}=200$ insufficient (a localized pitch-distribution bias at
+low-$p$ starts, where scattering is fastest) and used $400$, verified
+against $800$. (ii)~Scan the modeling split
+$\epsilon_{\min}\in\{0.01,0.02,0.04\}$: expect genuine drifts confined to
+the two absorbing-boundary layers --- the thermalization probability
+rises with $\epsilon_{\min}$ and the one-step runaway probability falls,
+both at the few-percent level, with drifts $<0.01$ elsewhere. Understand
+why before quoting exit probabilities (hint: the
+$\overline{\ln\Lambda}$ correction matches the \emph{mean} energy loss
+across the split, but near an absorbing wall the exit probability is
+sensitive to the fluctuation structure of that loss, not only its mean).
+
+\paragraph{Tests.} (B0) One-step transition from $(p_0,\xi_0)=(2,0.6)$
+(a contested start: acceleration, scattering, and jump losses compete)
+and $(5,0.9)$ (runaway-bound), as 2D sub-probability densities with $p$-
+and $\xi$-marginals. (B1) One-step exit maps over the domain (total exit
+probability and the runaway channel separately), on a grid of roughly
+$36\times18$ starts with $\gtrsim1500$ particles each. (B2) Rollout to
+$T=10$: survival and the cumulative runaway/thermalization split per
+coarse step, and the terminal surviving density.
+
+\paragraph{What to expect.} Unlike the Gaussian-jump 1D problems, the
+one-step density is \emph{uni-modal} --- a drift-shifted core with a
+heavy downward tail in $p$; the jump signature sits in the tail and in
+the exit mass, not in separated modes. The runaway exit map has a steep
+S-shaped front in $(p,\xi)$. Fate split at $T=10$: from $(2,0.6)$
+approximately survival $0.54$, runaway $0.33$, thermalized $0.14$; from
+$(5,0.9)$ runaway $\approx0.98$. Survivor marginals at one step reach
+$W_1\sim10^{-2}$ in $p$ and a few $10^{-3}$ in $\xi$. Expect the
+\emph{exit indicator to be the accuracy-limiting component}, with the
+largest errors on the steep runaway front, and expect naive uniform
+training data to be insufficient there --- we needed exit labels
+concentrated near the boundaries and wall-adapted input features; finding
+your own remedy is encouraged. Once the model works, ensemble
+computations become cheap: the runaway-probability map
+$P_{\rm RE}(p_0,\xi_0)$ (roll a grid of starts to fate saturation,
+$T=30\,\tau_c$), scans over initial seed distributions, and
+first-passage-time distributions are natural extensions --- with the fine
+integrator used only at a few anchor points.
+
+%----------------------------------------------------------------------
+\subsection{Problem 4: a 3D periodic transport benchmark}
+%----------------------------------------------------------------------
+
+\paragraph{Setting.} A passive tracer on the torus
+$\mathbb T^3=[0,2\pi)^3$:
+\begin{equation*}
+dX_t = \mathrm{Pe}\,v(X_t)\,dt + dW_t + dJ_t,
+\end{equation*}
+with the Arnold--Beltrami--Childress velocity field
+\begin{equation*}
+v(x,y,z)=\bigl(A\sin z + C\cos y,\;\; B\sin x + A\cos z,\;\;
+C\sin y + B\cos x\bigr), \qquad A=B=C=1,
+\end{equation*}
+at P\'eclet number $\mathrm{Pe}=5$; $W_t$ a standard 3D Brownian motion;
+and $J_t$ compound Poisson with rate $\lambda=4$, jumps
+$\Delta J=\ell\,\Omega$ with $\Omega$ uniform on the unit sphere and the
+length $\ell$ drawn from the exponentially tempered, truncated power law
+\begin{equation*}
+f(\ell)\;\propto\;\ell^{-1-\alpha}\,e^{-\ell/\ell_c}
+\quad\text{on }[\ell_{\min},\ell_{\max}],
+\qquad \alpha=1.5,\;\ell_{\min}=0.2,\;\ell_c=1,\;\ell_{\max}=2.5
+\end{equation*}
+(tempering: A.~Cartea, D.~del-Castillo-Negrete, \emph{Phys.\ Rev.\ E}
+\textbf{76}, 041105 (2007); truncation: R.~N.~Mantegna, H.~E.~Stanley,
+\emph{Phys.\ Rev.\ Lett.} \textbf{73}, 2946 (1994); $\ell_{\max}<\pi$, so
+a single jump cannot wrap the box). Coarse step $\Delta t=0.1$
+($\lambda\Delta t=0.4$ jumps per step); horizon $T=3$ ($K=30$). The
+domain is periodic --- no exit indicator; the learned object is the full
+transition kernel. Reference: $n_{\rm sub}=200$, scanned against $100$
+and $400$. Suggested training set: $3\times10^6$ one-step pairs from
+uniform starts (the field is divergence-free, so the uniform density is
+invariant and this covers the conditioning domain exactly).
+
+\paragraph{Two companion models}, trained separately: the \emph{no-jump
+twin} ($J\equiv0$) and the \emph{walk} variant --- rate
+$\lambda(x)=4\,|v(x)|^2/\langle|v|^2\rangle$ (flights initiated in the
+fast jet regions; $\langle|v|^2\rangle=A^2+B^2+C^2$ under the uniform
+measure), direction $+v(x)/|v(x)|$, same length law but
+$\ell_{\max}=1.5$. The tighter cutoff matters: flow-aligned flights
+compound coherently with the advection within one coarse step, and with
+$\ell_{\max}=2.5$ the one-step displacement becomes ambiguous on the
+torus at a measurable rate. \emph{Measure} your mis-wrap fraction rather
+than assuming it is zero.
+
+\paragraph{A design point to solve, not copy.} The conditioning must
+respect the periodicity --- naive conditioning on $x\in[0,2\pi)^3$
+breaks at the seam. We condition on $(\cos x_i,\sin x_i)_{i=1}^3$ and
+learn minimal-image increments
+$\bigl((y-x+\pi)\bmod 2\pi\bigr)-\pi$; other constructions are possible
+and worth comparing.
+
+\paragraph{Tests.} From the fixed starts $(\pi/2,\pi/2,\pi/2)$ and
+$(0,\pi,\pi/2)$, with displacements accumulated as sums of minimal-image
+coarse-step increments: one-step increment distributions per axis on a
+log scale (the tails carry the jumps); over the $30$ steps, the
+eigenvalues of the displacement covariance divided by $2t$ (finite-time
+dispersion --- check, do not assume, a plateau), the non-Gaussianity
+parameter
+$\mathrm{NGP}(t)=\tfrac{3\langle|D-\langle D\rangle|^4\rangle}
+{5\langle|D-\langle D\rangle|^2\rangle^2}-1$ (zero for Gaussian
+transport), a mixing diagnostic toward uniformity (e.g.\ the $L_1$
+distance of the 2D marginals from uniform), preservation of the uniform
+invariant density under the learned map, and the terminal displacement
+distributions. Run all three models and compare.
+
+\paragraph{What to expect.} The three-model comparison is the point of
+the benchmark, and it has a sign structure worth predicting before
+computing: the finite-time dispersion trace orders as \emph{isotropic
+jumps $<$ no jumps $<$ flow-aligned flights} ($\approx36<38<48$ at the
+symmetric start by $T=3$) --- isotropic relocations \emph{decorrelate}
+particles from coherent ballistic advection, removing more dispersion
+than the jump variance adds, while aligned flights \emph{extend} it.
+Jumps make the one-step tails much heavier ($99.9\%$ displacement
+quantile $\approx2.3$ vs.\ $1.6$--$1.8$ without jumps). Expect the
+learned map's weakest point to be exactly this extreme tail: rare large
+jumps are underrepresented in any finite training set, so the
+$10^{-3}$--$10^{-4}$ tail will come out under-resolved. The uniform
+density should be preserved at the histogram noise floor. A good learned
+result reproduces the dispersion ordering above with each trace within a
+few percent, and tracks $\mathrm{NGP}(t)$ after the first few steps.
+
+\paragraph{Beyond reproduction.} Open directions that start from these
+problems: exit-indicator calibration near steep fronts (rare-event
+training, alternative losses); tail-aware training for heavy-tailed jump
+laws; a quantitative consistency analysis of the learned kernel (when and
+how fast does it converge to the true one as the data grow?); replacing
+the training-free diffusion map by other conditional generative families;
+adaptive coarse steps; and, on the physics side, the avalanche extension
+of the runaway-electron model (the same jump machinery with particle
+creation). Improvements on any of these are new results, not
+reproductions.
+
+
+
+
+\paragraph{Conclusion.} On a 1D bounded jump-diffusion, the learned flow map plus
+exit indicator reproduce both the survival dynamics and the terminal distribution
+over a long horizon, at a large $\Delta t$ and about $40\times$ faster than the
+classical integrator. This exercises every ingredient the 2D runaway-electron
+model of Eq.~\eqref{eq:jdsde} requires --- jumps, a large-$\Delta t$ flow map, and
+an exit indicator for the separatrix --- before scaling up.
+
+%======================================================================
+\begin{thebibliography}{9}
+
+\bibitem{liu2024} Y.~Liu, M.~Yang, Z.~Zhang, F.~Bao, Y.~Cao, G.~Zhang,
+``Diffusion-model-assisted supervised learning of generative models for density
+estimation,'' \textit{J. Machine Learning for Modeling and Computing}
+\textbf{5}(1), 25--38 (2024). doi:10.1615/JMachLearnModelComput.2024051346.
+
+\bibitem{yang2025} M.~Yang, Y.~Liu, D.~del-Castillo-Negrete, Y.~Cao, G.~Zhang,
+``Generative AI models for learning flow maps of stochastic dynamical systems in
+bounded domains,'' \textit{J. Comput. Phys.}, 114434 (2025).
+
+\bibitem{rosenbluth1997} M.~N.~Rosenbluth, S.~V.~Putvinski,
+``Theory for avalanche of runaway electrons in tokamaks,''
+\textit{Nucl. Fusion} \textbf{37}, 1355 (1997).
+
+\bibitem{embreus2018} O.~Embr\'eus, A.~Stahl, T.~F\"ul\"op,
+``On the relativistic large-angle electron collision operator for runaway
+avalanches in plasmas,'' \textit{J. Plasma Phys.} \textbf{84}, 905840102 (2018).
+
+\bibitem{delcastillo_exit} M.~Yang, G.~Zhang, D.~del-Castillo-Negrete,
+M.~Stoyanov, ``A Feynman--Kac based numerical method for the exit time
+probability of a class of transport problems,'' \textit{J. Comput. Phys.}
+\textbf{444}, 110564 (2021). doi:10.1016/j.jcp.2021.110564.
+
+\end{thebibliography}
+
+\end{document}

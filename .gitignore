@@ -1,3 +1,4 @@
 learning_diffusion_sde/data/dataset.npz
 .DS_Store
 **/.DS_Store
+**/__pycache__/
