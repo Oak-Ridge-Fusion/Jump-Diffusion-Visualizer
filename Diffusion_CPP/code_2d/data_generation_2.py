@@ -30,7 +30,7 @@ import sys
 
 import numpy as np
 
-from common import Config, knock_rate, simulate_re2d_step, set_seed
+from common_2 import Config, knock_rate, simulate_re2d_step, set_seed
 
 
 def gen_exit_extra(cfg, rng):
