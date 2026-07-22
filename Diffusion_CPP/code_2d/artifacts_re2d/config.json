@@ -1,0 +1,53 @@
+{
+  "model": "re2d",
+  "physics_rev": 2,
+  "E_hat": 2.0,
+  "Z": 1.0,
+  "tau_syn": 100.0,
+  "lnLambda": 15.0,
+  "jumps_on": true,
+  "eps_min": 0.02,
+  "knock_density_ratio": 1.0,
+  "knock_lnL_correction": true,
+  "p_min": 1.0,
+  "p_max": 10.0,
+  "dt": 1.0,
+  "n_sub": 400,
+  "seed": 0,
+  "diff_scale": [
+    1.5,
+    1.5
+  ],
+  "train_size_labels": 50000,
+  "knn_k": 1024,
+  "ode_steps": 2000,
+  "label_chunk": 10000,
+  "hid_size": 128,
+  "lr": 0.001,
+  "weight_decay": 1e-06,
+  "distill_iters": 15000,
+  "exit_hidden": 256,
+  "exit_epochs": 300,
+  "n_exit_extra": 400000,
+  "n_full": 600000,
+  "n_ref_mc": 200000,
+  "n_b0": 100000,
+  "b1_grid": [
+    36,
+    18
+  ],
+  "b1_mc": 1500,
+  "rollout_K": 10,
+  "transition_test_x": [
+    [
+      2.0,
+      0.6
+    ],
+    [
+      5.0,
+      0.9
+    ]
+  ],
+  "device": "cuda",
+  "data_dir": "artifacts_re2d"
+}
