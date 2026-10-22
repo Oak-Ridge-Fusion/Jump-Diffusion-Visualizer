@@ -31,7 +31,7 @@
       "exit_probs_ml_stay_therm_run": [
         1.0,
         3.3775911845168594e-08,
-        3.2064883263355952e-15
+        3.206488538093832e-15
       ],
       "flow_map_escape_frac": 0.0
     }
@@ -42,10 +42,10 @@
       18
     ],
     "mc_per_point": 1500,
-    "max_abs_err_thermal": 0.07256157485644021,
-    "max_abs_err_runaway": 0.09619272581736249,
-    "mean_abs_err_thermal": 0.002033369240951276,
-    "mean_abs_err_runaway": 0.0005210675704950489
+    "max_abs_err_thermal": 0.07256166426340738,
+    "max_abs_err_runaway": 0.09619207016626996,
+    "mean_abs_err_thermal": 0.0020333678908836194,
+    "mean_abs_err_runaway": 0.0005210669535089039
   },
   "b2": {
     "K": 10,
@@ -60,7 +60,7 @@
         "thermal_final_ml": 0.139575,
         "runaway_final_num": 0.328865,
         "runaway_final_ml": 0.3093,
-        "terminal_sliced_W1": 0.027518528045833497
+        "terminal_sliced_W1": 0.027518419995793884
       },
       {
         "p0": 5.0,
@@ -71,13 +71,13 @@
         "thermal_final_ml": 3e-05,
         "runaway_final_num": 0.97917,
         "runaway_final_ml": 0.981645,
-        "terminal_sliced_W1": 0.03775222399410286
+        "terminal_sliced_W1": 0.03775225321841575
       }
     ],
-    "ml_time_s": 0.7322892060037702,
-    "numerical_time_s": 117.18528970598709,
-    "speedup": 160.02596890030324,
+    "ml_time_s": 7.813031582860276,
+    "numerical_time_s": 171.19907125015743,
+    "speedup": 21.911990171103735,
     "step_ratio": "10 vs 4000",
-    "note": "numerical CPU, ML on cuda:0"
+    "note": "numerical CPU, ML on cpu"
   }
 }
